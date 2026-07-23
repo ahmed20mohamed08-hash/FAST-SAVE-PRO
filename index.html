@@ -1,0 +1,1304 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fast Save - تحميل الفيديوهات والصوت</title>
+    <link rel="icon" type="image/png" href="icon.png">
+    <link rel="shortcut icon" type="image/png" href="icon.png">
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        :root {
+            --bg-deep: #090814;
+            --bg-card: #141226;
+            --bg-card-hover: #1a1835;
+            --pink-neon: #FF1F78;
+            --pink-glow: rgba(255, 31, 120, 0.3);
+            --blue-electric: #1F8FFF;
+            --blue-glow: rgba(31, 143, 255, 0.3);
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0b8;
+            --text-muted: #6b6b80;
+            --border-subtle: rgba(255, 255, 255, 0.08);
+            --shadow-card: 0 8px 32px rgba(0, 0, 0, 0.4);
+            --shadow-glow-pink: 0 0 30px var(--pink-glow);
+            --shadow-glow-blue: 0 0 30px var(--blue-glow);
+            --gradient-pink-blue: linear-gradient(135deg, var(--pink-neon), var(--blue-electric));
+            --gradient-card: linear-gradient(145deg, rgba(20, 18, 38, 0.9), rgba(15, 13, 30, 0.95));
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Tajawal', sans-serif;
+            background: var(--bg-deep);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        .bg-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .bg-animation .orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.15;
+            animation: float 20s infinite ease-in-out;
+        }
+
+        .bg-animation .orb-1 {
+            width: 400px;
+            height: 400px;
+            background: var(--pink-neon);
+            top: -100px;
+            right: -100px;
+            animation-delay: 0s;
+        }
+
+        .bg-animation .orb-2 {
+            width: 300px;
+            height: 300px;
+            background: var(--blue-electric);
+            bottom: -50px;
+            left: -50px;
+            animation-delay: -5s;
+        }
+
+        .bg-animation .orb-3 {
+            width: 250px;
+            height: 250px;
+            background: var(--pink-neon);
+            top: 50%;
+            left: 50%;
+            animation-delay: -10s;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            25% { transform: translate(30px, -30px) scale(1.1); }
+            50% { transform: translate(-20px, 20px) scale(0.9); }
+            75% { transform: translate(20px, 10px) scale(1.05); }
+        }
+
+        .noise-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            pointer-events: none;
+            opacity: 0.03;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+        }
+
+        .app-container {
+            position: relative;
+            z-index: 2;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .app-header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px 0 30px;
+            gap: 15px;
+        }
+
+        .app-header .logo-icon {
+            width: 55px;
+            height: 55px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            box-shadow: var(--shadow-glow-blue);
+            animation: pulse-glow 3s infinite;
+            background: transparent;
+            padding: 0;
+            border: none;
+        }
+
+        .app-header .logo-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 16px;
+            display: block;
+            border: none;
+            outline: none;
+        }
+
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 20px var(--blue-glow); }
+            50% { box-shadow: 0 0 40px var(--blue-glow), 0 0 60px var(--pink-glow); }
+        }
+
+        .app-header h1 {
+            font-size: 28px;
+            font-weight: 800;
+            background: var(--gradient-pink-blue);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .app-header .subtitle {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        .nav-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 25px;
+            background: var(--bg-card);
+            padding: 6px;
+            border-radius: 20px;
+            border: 1px solid var(--border-subtle);
+            backdrop-filter: blur(20px);
+        }
+
+        .nav-tab {
+            flex: 1;
+            padding: 14px 20px;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            font-family: 'Tajawal', sans-serif;
+            font-size: 14px;
+            font-weight: 600;
+            border-radius: 16px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .nav-tab::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: var(--gradient-pink-blue);
+            opacity: 0;
+            transition: opacity 0.3s;
+            border-radius: 16px;
+        }
+
+        .nav-tab:hover {
+            color: var(--text-primary);
+            transform: translateY(-2px);
+        }
+
+        .nav-tab.active {
+            color: var(--text-primary);
+            box-shadow: 0 4px 20px rgba(255, 31, 120, 0.2);
+        }
+
+        .nav-tab.active::before {
+            opacity: 1;
+        }
+
+        .nav-tab span, .nav-tab i {
+            position: relative;
+            z-index: 1;
+        }
+
+        .card {
+            background: var(--gradient-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 24px;
+            padding: 28px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow-card);
+            backdrop-filter: blur(20px);
+            transition: transform 0.3s, box-shadow 0.3s;
+            animation: fadeInUp 0.5s ease-out;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5), 0 0 30px rgba(31, 143, 255, 0.05);
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: var(--text-primary);
+        }
+
+        .card-desc {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 24px;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+
+        .input-wrapper {
+            position: relative;
+        }
+
+        .input-wrapper i {
+            position: absolute;
+            right: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--blue-electric);
+            font-size: 16px;
+        }
+
+        .input-field {
+            width: 100%;
+            padding: 14px 16px 14px 48px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-subtle);
+            border-radius: 16px;
+            color: var(--text-primary);
+            font-family: 'Tajawal', sans-serif;
+            font-size: 15px;
+            transition: all 0.3s;
+            outline: none;
+        }
+
+        .input-field::placeholder {
+            color: var(--text-muted);
+        }
+
+        .input-field:focus {
+            border-color: var(--pink-neon);
+            box-shadow: 0 0 0 3px var(--pink-glow);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .input-field.input-with-icon {
+            padding-right: 48px;
+        }
+
+        .switch-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+            padding: 12px 16px;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 14px;
+            border: 1px solid var(--border-subtle);
+        }
+
+        .switch-label {
+            font-size: 14px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .switch {
+            position: relative;
+            width: 50px;
+            height: 26px;
+            flex-shrink: 0;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            inset: 0;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 26px;
+            transition: 0.3s;
+        }
+
+        .slider::before {
+            content: '';
+            position: absolute;
+            height: 20px;
+            width: 20px;
+            right: 3px;
+            bottom: 3px;
+            background: white;
+            border-radius: 50%;
+            transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .switch input:checked + .slider {
+            background: var(--pink-neon);
+            box-shadow: 0 0 15px var(--pink-glow);
+        }
+
+        .switch input:checked + .slider::before {
+            transform: translateX(-24px);
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 14px 28px;
+            border: none;
+            border-radius: 16px;
+            font-family: 'Tajawal', sans-serif;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-primary {
+            background: var(--gradient-pink-blue);
+            color: white;
+            box-shadow: 0 4px 20px var(--pink-glow);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px var(--pink-glow), 0 0 40px var(--blue-glow);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: var(--blue-electric);
+            border: 1px solid rgba(31, 143, 255, 0.3);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(31, 143, 255, 0.1);
+            border-color: var(--blue-electric);
+            box-shadow: 0 0 20px var(--blue-glow);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #00c853, #00e676);
+            color: white;
+            box-shadow: 0 4px 20px rgba(0, 200, 83, 0.3);
+        }
+
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(0, 200, 83, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .btn-full {
+            width: 100%;
+            padding: 16px;
+            font-size: 16px;
+        }
+
+        .btn-icon {
+            font-size: 18px;
+        }
+
+        .select-wrapper {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .select-wrapper::after {
+            content: '\f107';
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            pointer-events: none;
+            font-size: 14px;
+        }
+
+        .select-field {
+            width: 100%;
+            padding: 14px 40px 14px 16px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-subtle);
+            border-radius: 16px;
+            color: var(--text-primary);
+            font-family: 'Tajawal', sans-serif;
+            font-size: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+            outline: none;
+            appearance: none;
+        }
+
+        .select-field:focus {
+            border-color: var(--pink-neon);
+            box-shadow: 0 0 0 3px var(--pink-glow);
+        }
+
+        .select-field option {
+            background: var(--bg-card);
+            color: var(--text-primary);
+            padding: 10px;
+        }
+
+        .progress-container {
+            margin: 20px 0;
+            display: none;
+        }
+
+        .progress-container.active {
+            display: block;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--gradient-pink-blue);
+            border-radius: 10px;
+            width: 0%;
+            transition: width 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .progress-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            animation: shimmer 1.5s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .progress-text {
+            text-align: center;
+            margin-top: 10px;
+            font-size: 13px;
+            color: var(--blue-electric);
+            font-weight: 500;
+        }
+
+        .status-message {
+            text-align: center;
+            padding: 12px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 500;
+            margin-top: 15px;
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .status-message.show {
+            display: block;
+        }
+
+        .status-info {
+            background: rgba(31, 143, 255, 0.1);
+            color: var(--blue-electric);
+            border: 1px solid rgba(31, 143, 255, 0.2);
+        }
+
+        .status-success {
+            background: rgba(0, 200, 83, 0.1);
+            color: #00e676;
+            border: 1px solid rgba(0, 200, 83, 0.2);
+        }
+
+        .status-error {
+            background: rgba(255, 50, 50, 0.1);
+            color: #ff5252;
+            border: 1px solid rgba(255, 50, 50, 0.2);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .upload-area {
+            border: 2px dashed rgba(31, 143, 255, 0.3);
+            border-radius: 20px;
+            padding: 40px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: rgba(31, 143, 255, 0.02);
+            margin-bottom: 20px;
+        }
+
+        .upload-area:hover {
+            border-color: var(--blue-electric);
+            background: rgba(31, 143, 255, 0.05);
+            transform: scale(1.01);
+        }
+
+        .upload-area.dragover {
+            border-color: var(--pink-neon);
+            background: rgba(255, 31, 120, 0.05);
+            transform: scale(1.02);
+        }
+
+        .upload-area i {
+            font-size: 48px;
+            color: var(--blue-electric);
+            margin-bottom: 15px;
+            display: block;
+        }
+
+        .upload-area h3 {
+            font-size: 16px;
+            margin-bottom: 8px;
+        }
+
+        .upload-area p {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .time-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .dev-card {
+            text-align: center;
+            padding: 40px 30px;
+        }
+
+        .dev-avatar {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: var(--gradient-pink-blue);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            font-size: 40px;
+            box-shadow: var(--shadow-glow-pink);
+            position: relative;
+        }
+
+        .dev-avatar::after {
+            content: '';
+            position: absolute;
+            inset: -4px;
+            border-radius: 50%;
+            background: var(--gradient-pink-blue);
+            opacity: 0.3;
+            filter: blur(10px);
+            z-index: -1;
+        }
+
+        .dev-name {
+            font-size: 22px;
+            font-weight: 800;
+            margin-bottom: 5px;
+        }
+
+        .dev-role {
+            font-size: 15px;
+            color: var(--pink-neon);
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+
+        .dev-bio {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 30px;
+            line-height: 1.8;
+        }
+
+        .contact-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .app-footer {
+            text-align: center;
+            padding: 30px 0;
+            color: var(--text-muted);
+            font-size: 12px;
+            margin-top: auto;
+        }
+
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            pointer-events: none;
+        }
+
+        .toast {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 16px;
+            padding: 16px 24px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            animation: toastIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            pointer-events: all;
+            min-width: 300px;
+        }
+
+        .toast.hiding {
+            animation: toastOut 0.3s ease forwards;
+        }
+
+        .toast-icon {
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+
+        .toast-content {
+            flex: 1;
+        }
+
+        .toast-title {
+            font-weight: 700;
+            font-size: 14px;
+            margin-bottom: 2px;
+        }
+
+        .toast-message {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        @keyframes toastIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        @keyframes toastOut {
+            to {
+                opacity: 0;
+                transform: translateY(-20px) scale(0.95);
+            }
+        }
+
+        .section {
+            display: none;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        .folder-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 8px;
+        }
+
+        @media (max-width: 600px) {
+            .app-container {
+                padding: 15px;
+            }
+
+            .card {
+                padding: 20px;
+                border-radius: 20px;
+            }
+
+            .nav-tab {
+                padding: 12px 10px;
+                font-size: 12px;
+            }
+
+            .nav-tab span {
+                display: none;
+            }
+
+            .time-row {
+                grid-template-columns: 1fr;
+            }
+
+            .app-header h1 {
+                font-size: 22px;
+            }
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-deep);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--bg-card);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--pink-neon);
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-animation">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+    </div>
+    <div class="noise-overlay"></div>
+
+    <div class="toast-container" id="toastContainer"></div>
+
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="logo-icon">
+                <img src="icon.png" alt="Fast Save Logo">
+            </div>
+            <div>
+                <h1>Fast Save</h1>
+                <div class="subtitle">تحميل وتحويل الفيديوهات بسهولة</div>
+            </div>
+        </header>
+
+        <!-- Navigation -->
+        <nav class="nav-tabs">
+            <button class="nav-tab active" onclick="switchTab(0)">
+                <i class="fas fa-home"></i>
+                <span>الرئيسية</span>
+            </button>
+            <button class="nav-tab" onclick="switchTab(1)">
+                <i class="fas fa-music"></i>
+                <span>تحويل محلي</span>
+            </button>
+            <button class="nav-tab" onclick="switchTab(2)">
+                <i class="fas fa-code"></i>
+                <span>المطور</span>
+            </button>
+        </nav>
+
+        <!-- Main Section: Online Download -->
+        <section class="section active" id="section-download">
+            <div class="card">
+                <h2 class="card-title">📥 تحميل من الإنترنت</h2>
+                <p class="card-desc">ألصق رابط الفيديو من يوتيوب، تيك توك، فيسبوك، أو أي منصة أخرى</p>
+
+                <!-- Playlist Switch -->
+                <div class="switch-container">
+                    <label class="switch">
+                        <input type="checkbox" id="playlistSwitch">
+                        <span class="slider"></span>
+                    </label>
+                    <span class="switch-label">تفعيل تحميل قوائم التشغيل (Playlist)</span>
+                </div>
+
+                <!-- URL Input -->
+                <div class="input-group">
+                    <label class="input-label">رابط الفيديو</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-link"></i>
+                        <input type="text" class="input-field input-with-icon" id="urlInput" 
+                               placeholder="https://youtube.com/watch?v=..." dir="ltr">
+                    </div>
+                </div>
+
+                <!-- Check Button -->
+                <div style="display: flex; justify-content: flex-start; margin-bottom: 20px;">
+                    <button class="btn btn-secondary" id="checkBtn" onclick="checkLink()">
+                        <i class="fas fa-search btn-icon"></i>
+                        فحص الرابط
+                    </button>
+                </div>
+
+                <!-- Format Select -->
+                <div class="select-wrapper">
+                    <select class="select-field" id="formatSelect" disabled>
+                        <option value="">اختر الجودة أو الصيغة (يتم عرضها بعد الفحص)</option>
+                    </select>
+                </div>
+
+                <!-- Download Button -->
+                <button class="btn btn-primary btn-full" id="downloadBtn" disabled onclick="startDownload()">
+                    <i class="fas fa-download btn-icon"></i>
+                    بدء التحميل الآن
+                </button>
+
+                <!-- Progress -->
+                <div class="progress-container" id="downloadProgress">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="downloadProgressFill"></div>
+                    </div>
+                    <div class="progress-text" id="downloadProgressText">جاري التحميل...</div>
+                </div>
+
+                <!-- Status -->
+                <div class="status-message status-info" id="downloadStatus"></div>
+            </div>
+        </section>
+
+        <!-- Convert Section: Local Video to MP3 -->
+        <section class="section" id="section-convert">
+            <div class="card">
+                <h2 class="card-title">🎵 تحويل فيديو محلي إلى MP3</h2>
+                <p class="card-desc">اختر ملف فيديو من جهازك واستخرج الصوت بجودة عالية</p>
+
+                <!-- Upload Area -->
+                <div class="upload-area" id="uploadArea" onclick="document.getElementById('videoInput').click()">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <h3>اسحب الفيديو هنا أو اضغط للاختيار</h3>
+                    <p>يدعم: MP4, MKV, AVI, MOV, FLV</p>
+                </div>
+                <input type="file" class="file-input" id="videoInput" accept=".mp4,.mkv,.avi,.mov,.flv" onchange="handleFileSelect(event)">
+
+                <div class="folder-info" style="margin-bottom: 20px;">
+                    <i class="fas fa-video"></i>
+                    <span id="selectedVideoText">لم يتم اختيار فيديو بعد</span>
+                </div>
+
+                <!-- Time Inputs -->
+                <p class="input-label">✂️ أوقات قص الصوت اختيارياً (بالثواني):</p>
+                <div class="time-row">
+                    <div class="input-group" style="margin-bottom: 0;">
+                        <label class="input-label">البداية (ثانية)</label>
+                        <input type="number" class="input-field" id="startTime" placeholder="0" min="0">
+                    </div>
+                    <div class="input-group" style="margin-bottom: 0;">
+                        <label class="input-label">النهاية (ثانية)</label>
+                        <input type="number" class="input-field" id="endTime" placeholder="60" min="0">
+                    </div>
+                </div>
+
+                <!-- Convert Button -->
+                <button class="btn btn-primary btn-full" id="convertBtn" disabled onclick="startConvert()">
+                    <i class="fas fa-music btn-icon"></i>
+                    بدء استخراج الصوت
+                </button>
+
+                <!-- Progress -->
+                <div class="progress-container" id="convertProgress">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="convertProgressFill"></div>
+                    </div>
+                    <div class="progress-text" id="convertProgressText">جاري المعالجة...</div>
+                </div>
+
+                <!-- Status -->
+                <div class="status-message status-info" id="convertStatus"></div>
+            </div>
+        </section>
+
+        <!-- Developer Section -->
+        <section class="section" id="section-developer">
+            <div class="card dev-card">
+                <div class="dev-avatar">
+                    <i class="fas fa-user"></i>
+                </div>
+                <h2 class="dev-name">Eng. Ahmed Abu Al-Diyar</h2>
+                <p class="dev-role">Software & DevOps Engineer</p>
+                <p class="dev-bio">
+                    مرحباً بك! أنا مبرمج ومطور برمجيات، يمكنك التواصل معي عبر القنوات التالية.
+                    أسعى دائماً لتقديم حلول تقنية مبتكرة وعصرية.
+                </p>
+
+                <p style="font-size: 14px; font-weight: 600; margin-bottom: 15px; color: var(--text-secondary);">
+                    قنوات التواصل السريع:
+                </p>
+
+                <div class="contact-buttons">
+                    <a href="https://wa.me/201552833826" target="_blank" class="btn btn-success" style="text-decoration: none;">
+                        <i class="fab fa-whatsapp btn-icon"></i>
+                        تواصل عبر الواتساب
+                    </a>
+                    <a href="tel:+201552833826" class="btn btn-secondary" style="text-decoration: none;">
+                        <i class="fas fa-phone btn-icon"></i>
+                        اتصال هاتفي مباشر
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="app-footer">
+            <p>Fast Save © 2026 - جميع الحقوق محفوظة</p>
+        </footer>
+    </div>
+
+    <script>
+        // ===== State Management =====
+        let currentTab = 0;
+        let selectedVideoFile = null;
+        let videoInfo = null;
+
+        // ===== Tab Switching =====
+        function switchTab(index) {
+            currentTab = index;
+            document.querySelectorAll('.nav-tab').forEach((tab, i) => {
+                tab.classList.toggle('active', i === index);
+            });
+            document.querySelectorAll('.section').forEach((section, i) => {
+                section.classList.toggle('active', i === index);
+            });
+        }
+
+        // ===== Toast Notifications =====
+        function showToast(title, message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            const icons = {
+                info: 'fa-info-circle',
+                success: 'fa-check-circle',
+                error: 'fa-exclamation-circle',
+                warning: 'fa-exclamation-triangle'
+            };
+            const colors = {
+                info: 'var(--blue-electric)',
+                success: '#00e676',
+                error: '#ff5252',
+                warning: '#ffab00'
+            };
+            toast.innerHTML = `
+                <i class="fas ${icons[type]} toast-icon" style="color: ${colors[type]}"></i>
+                <div class="toast-content">
+                    <div class="toast-title">${title}</div>
+                    <div class="toast-message">${message}</div>
+                </div>
+            `;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.classList.add('hiding');
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
+        }
+
+        // ===== URL Check =====
+        async function checkLink() {
+            const url = document.getElementById('urlInput').value.trim();
+            if (!url) {
+                showToast('تنبيه', 'برجاء إدخال رابط أولاً!', 'warning');
+                return;
+            }
+
+            const checkBtn = document.getElementById('checkBtn');
+            const formatSelect = document.getElementById('formatSelect');
+            const statusDiv = document.getElementById('downloadStatus');
+
+            checkBtn.disabled = true;
+            checkBtn.innerHTML = '<span class="spinner"></span> جاري الفحص...';
+            statusDiv.className = 'status-message status-info show';
+            statusDiv.textContent = 'جاري فحص الرابط...';
+
+            try {
+                const response = await fetch('/api/check', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url })
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    videoInfo = data;
+                    formatSelect.innerHTML = data.formats.map(f => 
+                        `<option value="${f.id}">${f.label}</option>`
+                    ).join('');
+                    formatSelect.value = 'best';
+                    formatSelect.disabled = false;
+                    document.getElementById('downloadBtn').disabled = false;
+                    statusDiv.className = 'status-message status-success show';
+                    statusDiv.textContent = `جاهز: ${data.title}`;
+                    showToast('تم بنجاح', 'تم التعرف على الرابط!', 'success');
+                } else {
+                    throw new Error(data.error);
+                }
+            } catch (error) {
+                statusDiv.className = 'status-message status-error show';
+                statusDiv.textContent = 'فشل في التعرف على الرابط. تأكد من تشغيل الباكند.';
+                showToast('خطأ', error.message, 'error');
+            }
+            checkBtn.disabled = false;
+            checkBtn.innerHTML = '<i class="fas fa-search btn-icon"></i> فحص الرابط';
+        }
+
+        // ===== Download =====
+        async function startDownload() {
+            const url = document.getElementById('urlInput').value.trim();
+            const format = document.getElementById('formatSelect').value;
+            if (!url || !format) {
+                showToast('تنبيه', 'برجاء فحص الرابط أولاً!', 'warning');
+                return;
+            }
+
+            const downloadBtn = document.getElementById('downloadBtn');
+            const progressContainer = document.getElementById('downloadProgress');
+            const progressFill = document.getElementById('downloadProgressFill');
+            const progressText = document.getElementById('downloadProgressText');
+            const statusDiv = document.getElementById('downloadStatus');
+
+            downloadBtn.disabled = true;
+            progressContainer.classList.add('active');
+            progressFill.style.width = '10%';
+            progressText.textContent = 'جاري التحميل... 10%';
+            statusDiv.className = 'status-message status-info show';
+            statusDiv.textContent = 'جاري تحميل الملف...';
+
+            try {
+                const response = await fetch('/api/download', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url, format })
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    progressFill.style.width = '100%';
+                    progressText.textContent = 'اكتمل 100%';
+                    setTimeout(() => {
+                        progressContainer.classList.remove('active');
+                        statusDiv.className = 'status-message status-success show';
+                        statusDiv.textContent = format === 'audio' 
+                            ? 'تم استخراج الصوت بنجاح!' 
+                            : 'تم التحميل بنجاح!';
+                        downloadBtn.disabled = false;
+                        showToast('اكتمل!', data.message, 'success');
+                        setTimeout(() => window.location = `/api/file/${data.filename}`, 1000);
+                    }, 500);
+                } else {
+                    throw new Error(data.error);
+                }
+            } catch (error) {
+                progressContainer.classList.remove('active');
+                statusDiv.className = 'status-message status-error show';
+                statusDiv.textContent = 'فشل التحميل. تأكد من تشغيل الباكند.';
+                downloadBtn.disabled = false;
+                showToast('خطأ', error.message, 'error');
+            }
+        }
+
+        // ===== File Selection =====
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                selectedVideoFile = file;
+                document.getElementById('selectedVideoText').textContent = 
+                    `الفيديو المختار: ${file.name}`;
+                document.getElementById('convertBtn').disabled = false;
+                showToast('تم الاختيار', `تم اختيار: ${file.name}`, 'success');
+            }
+        }
+
+        // Drag and Drop
+        const uploadArea = document.getElementById('uploadArea');
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                const file = files[0];
+                const validTypes = ['.mp4', '.mkv', '.avi', '.mov', '.flv'];
+                const ext = '.' + file.name.split('.').pop().toLowerCase();
+                if (validTypes.includes(ext)) {
+                    selectedVideoFile = file;
+                    document.getElementById('selectedVideoText').textContent = 
+                        `الفيديو المختار: ${file.name}`;
+                    document.getElementById('convertBtn').disabled = false;
+                    showToast('تم الاختيار', `تم اختيار: ${file.name}`, 'success');
+                } else {
+                    showToast('خطأ', 'صيغة الملف غير مدعومة!', 'error');
+                }
+            }
+        });
+
+        // ===== Convert =====
+        async function startConvert() {
+            if (!selectedVideoFile) {
+                showToast('تنبيه', 'برجاء اختيار ملف فيديو أولاً!', 'warning');
+                return;
+            }
+
+            const startSec = document.getElementById('startTime').value;
+            const endSec = document.getElementById('endTime').value;
+
+            const convertBtn = document.getElementById('convertBtn');
+            const progressContainer = document.getElementById('convertProgress');
+            const progressFill = document.getElementById('convertProgressFill');
+            const progressText = document.getElementById('convertProgressText');
+            const statusDiv = document.getElementById('convertStatus');
+
+            convertBtn.disabled = true;
+            progressContainer.classList.add('active');
+            progressFill.style.width = '10%';
+            progressText.textContent = 'جاري الرفع... 10%';
+            statusDiv.className = 'status-message status-info show';
+            statusDiv.textContent = 'جاري رفع ومعالجة الملف...';
+
+            const form = new FormData();
+            form.append('video', selectedVideoFile);
+            form.append('start', startSec);
+            form.append('end', endSec);
+
+            let progress = 10;
+            const interval = setInterval(() => {
+                progress += Math.random() * 15;
+                if (progress > 90) progress = 90;
+                progressFill.style.width = progress + '%';
+                progressText.textContent = `جاري المعالجة... ${Math.round(progress)}%`;
+            }, 800);
+
+            try {
+                const response = await fetch('/api/convert', { method: 'POST', body: form });
+                const data = await response.json();
+                clearInterval(interval);
+
+                if (data.success) {
+                    progressFill.style.width = '100%';
+                    progressText.textContent = 'اكتمل 100%';
+                    setTimeout(() => {
+                        progressContainer.classList.remove('active');
+                        statusDiv.className = 'status-message status-success show';
+                        statusDiv.textContent = 'تم الحفظ بنجاح كـ MP3!';
+                        convertBtn.disabled = false;
+                        showToast('اكتمل بنجاح', 'اكتمل التحويل بنجاح!', 'success');
+                        setTimeout(() => window.location = `/api/file/${data.filename}`, 1000);
+                    }, 500);
+                } else {
+                    throw new Error(data.error);
+                }
+            } catch (error) {
+                clearInterval(interval);
+                progressContainer.classList.remove('active');
+                statusDiv.className = 'status-message status-error show';
+                statusDiv.textContent = 'فشل التحويل.';
+                convertBtn.disabled = false;
+                showToast('خطأ', error.message, 'error');
+            }
+        }
+
+        // ===== Enter key support =====
+        document.getElementById('urlInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') checkLink();
+        });
+
+        // ===== Initialize =====
+        showToast('أهلاً بك!', 'التطبيق جاهز. تأكد من تشغيل الباكند على localhost:3000', 'info');
+    </script>
+</body>
+</html>
